@@ -582,7 +582,7 @@ MTAPonShapefile <- function(shpFilePath, neigType, howManyTargetPts, upperLimit)
   # decide on start and target points
   # Set Start and Target points
   # If Texas
-  if(length(inShp@polygons) == 254){
+  if(length(inShp@polygons) == 254 && howManyTargetPts == 4){
     # 226 - houston
     # 216 - austin
     # 130 - san saba
@@ -601,7 +601,29 @@ MTAPonShapefile <- function(shpFilePath, neigType, howManyTargetPts, upperLimit)
     targetPoints <- rbind(targetPoints, c(x = allPoints[155,2], y = allPoints[155,3]))
     targetPoints <- rbind(targetPoints, c(x = allPoints[239,2], y = allPoints[239,3]))
 
-  }else {
+  }
+
+  else if(length(inShp@polygons) == 254 && howManyTargetPts == 3){
+    # 226 - houston
+    # 216 - austin
+    # 130 - san saba
+    # 155 - wichita
+    # 239 - dallas
+
+    # Record all points
+    sizeOfinput <- nrow(inShp@data)
+    allPoints <- data.frame(idx = 1:sizeOfinput, x = inShp@data$x, y = inShp@data$y, grp="Intermediate")
+
+    startPoint <- data.frame()
+    startPoint <- data.frame(x = allPoints[226,2], y = allPoints[226,3])
+    targetPoints <- data.frame()
+    targetPoints <- data.frame(x = allPoints[216,2], y = allPoints[216,3])
+    targetPoints <- rbind(targetPoints, c(x = allPoints[130,2], y = allPoints[130,3]))
+    targetPoints <- rbind(targetPoints, c(x = allPoints[155,2], y = allPoints[155,3]))
+
+  }
+
+  else {
     tNum <- 32
     targetPoints <- data.frame()
     startPoint <- data.frame(x = allPoints[5,2], y = allPoints[5,3])
