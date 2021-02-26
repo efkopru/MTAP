@@ -33,6 +33,10 @@ solveMTAPInstance <- function(n, neigType, upperLimit){
   # starting from 0 or 1 ?
   numOfTargetPts <- nrow(targetPoints)
   numOfStartPts <- nrow(startPoint)
+  minRow <- 1
+  minCol <- 1
+  maxRow <- n
+  maxCol <- n
 
   if(tolower(neigType)=='hexagon'){
     ########################### Hexagonal ##############################
@@ -82,7 +86,6 @@ solveMTAPInstance <- function(n, neigType, upperLimit){
 
     }
 
-
     # Number of Start and Target points
     numOfTargetPts <- nrow(targetPoints)
     numOfStartPts <- nrow(startPoint)
@@ -107,7 +110,6 @@ solveMTAPInstance <- function(n, neigType, upperLimit){
       return(hexaDF)
 
     }
-
 
     ########################### Hexagonal ##############################
 
@@ -135,7 +137,7 @@ solveMTAPInstance <- function(n, neigType, upperLimit){
     ########################### CALCULATE MTAP ###########################
 
     # Create a new MIPModel()
-    MTAPModel <- MIPModel()
+    MTAPModel <- ompr::MIPModel()
 
     # Flow variables
     MTAPModel <- add_variable(MTAPModel, f[i], i = 1:totNV, type = "integer", lb=0)
@@ -158,7 +160,6 @@ solveMTAPInstance <- function(n, neigType, upperLimit){
     for (i in 1:numOfStartPts) {
       # FROM and TO Start point Indexes
       FROMstartPoint <- flowVars[which(flowVars$x == startPoint$x[i] & flowVars$y == startPoint$y[i]), "index" ]
-      # TOstartPoint <- flowVars[which(flowVars$nX == startPoint$x[i] & flowVars$nY == startPoint$y[i]), "index" ]
       MTAPModel <- add_constraint(MTAPModel, sum_expr(f[i], i = FROMstartPoint) == numOfTargetPts)
 
     }
@@ -235,21 +236,9 @@ solveMTAPInstance <- function(n, neigType, upperLimit){
   ## End of hexagon
   else{
 
-    minMaxsize <- function(){
-      minRow <- 1
-      minCol <- 1
-      maxRow <- n
-      maxCol <- n
-
-      return(data.frame(minRow, minCol,maxRow,maxCol))
-
-    }
-
     # Create all possible locations
     createPossibleLocations <- function(){
-      surfMinMax <- minMaxsize()
-
-      xyCmb <- gtools::permutations(n, 2, surfMinMax$minRow:surfMinMax$maxRow, repeats.allowed=TRUE)
+      xyCmb <- gtools::permutations(n, 2, minRow:maxRow, repeats.allowed=TRUE)
       allPoints <<- data.frame(idx = 1:nrow(xyCmb), x = xyCmb[,1], y = xyCmb[,2], grp="Intermediate")
 
       # Group Start, Target and Int nodes for plotting
@@ -267,17 +256,8 @@ solveMTAPInstance <- function(n, neigType, upperLimit){
 
     }
 
-    dist_fun <- function(i, j) {
-      vapply(seq_along(i), function(k) impedance[i[k], j[k]], numeric(1L))
-    }
-
     # (Queen or Rook negihbors)
     neighborsWType <- function(nStyle, varLetter, varType, i, j){
-      minmax <- minMaxsize()
-      minRow <- minmax$minRow
-      minCol <- minmax$minCol
-      maxRow <- minmax$maxRow
-      maxCol <- minmax$maxCol
       if((i>=minRow) & (i<=maxRow) & (j>=minCol) & (j<=maxCol)){
         neigs <- data.frame()
         locAndneigs <- data.frame()
@@ -315,12 +295,6 @@ solveMTAPInstance <- function(n, neigType, upperLimit){
 
     # Create neighbors
     recordAllneighbors <- function(varType, varLetter, nStyle){
-      minmax <- minMaxsize()
-      minRow <- minmax$minRow
-      minCol <- minmax$minCol
-      maxRow <- minmax$maxRow
-      maxCol <- minmax$maxCol
-
       allCombined <- data.frame()
       for (a in  minRow:maxRow){
         for (b in minCol:maxCol){
@@ -361,14 +335,8 @@ solveMTAPInstance <- function(n, neigType, upperLimit){
 
     ########################### CALCULATE MTAP ###########################
 
-    minmax <- minMaxsize()
-    minRow <- minmax$minRow
-    minCol <- minmax$minCol
-    maxRow <- minmax$maxRow
-    maxCol <- minmax$maxCol
-
     # Create a new MIPModel()
-    MTAPModel <- MIPModel()
+    MTAPModel <- ompr::MIPModel()
 
     # Flow variables
     MTAPModel <- add_variable(MTAPModel, f[i], i = 1:totNV, type = "integer", lb=0)
@@ -500,21 +468,13 @@ plotMTAPResults<- function(MTAPResult, neigType){
   ggplot() +
     # if in aes(), size goes in the legend.
     geom_point(data=allP2, aes(x, y, color=grp),size = 3) +
-    # use minor_breaks for background grid lines.
     scale_y_continuous(minor_breaks = integer_breaks) +
     scale_x_continuous(minor_breaks = integer_breaks) +
     scale_color_manual(values=c("green", "red", "gray"), breaks = c("Start", "Target", "Intermediate")) +
     geom_segment(data=d2, mapping = aes(x=x, y=y, xend=nX, yend=nY), arrow=arrow(length=unit(0.21,"cm"), ends="last", type = "closed"), col='blue', size=0.1)+
-    # geom_text(data=d2, mapping = aes(x=nX+xOffset, y=nY+yOffset,label=impValues) )+
     labs( title = paste0("Optimal Cost : ", MTAPResult$objective_value), subtitle = paste0("Computation Time : ",compTime, " secs"))+
     # To remove background grid lines
-    theme(  panel.background = element_rect(fill = "lightgray",
-                                            colour = "lightgray",
-                                            size = 0.5, linetype = "solid"),
-            panel.grid.major = element_line(size = 0.5, linetype = 'solid',
-                                            colour = "white"),
-            panel.grid.minor = element_line(size = 0.25, linetype = 'solid',
-                                            colour = "white"))
+    theme(panel.background = element_rect(fill = "lightgray"))
 }
 
 
@@ -677,7 +637,7 @@ MTAPonShapefile <- function(shpFilePath, neigType, howManyTargetPts, upperLimit)
   ########################### CALCULATE MTAP ###########################
 
   # Create a new MIPModel()
-  MTAPModel <- MIPModel()
+  MTAPModel <- ompr::MIPModel()
 
   # Flow variables
   MTAPModel <- add_variable(MTAPModel, f[i], i = 1:totNV, type = "integer", lb=0)
@@ -799,23 +759,6 @@ MTAPonShapefile <- function(shpFilePath, neigType, howManyTargetPts, upperLimit)
   plot(inShp,col="palegreen3" ,border=grey(0.9), axes=T ) # Second plot areas
   arrows(x0 = d$x, x1 = d$nX, y0 = d$y, y1 = d$nY, length = 0.3, angle = 30 , col="blue")
 
-
-  # # Alternative plotting, centroids
-  # mapAlternative <- ggplot() +
-  #   # if in aes(), size goes in the legend.
-  #   geom_point(data=allPoints, aes(x, y, color=grp),size = 2) +
-  #   # use minor_breaks for background grid lines.
-  #   scale_y_continuous(minor_breaks = integer_breaks) +
-  #   scale_x_continuous(minor_breaks = integer_breaks) +
-  #   scale_color_manual(values=c("green", "red", "gray"), breaks = c("Start", "Target", "Intermediate")) +
-  #   geom_segment(data=d, mapping = aes(x=x, y=y, xend=nX, yend=nY), arrow=arrow(length=unit(0.21,"cm"), ends="last", type = "closed"), col='blue', size=0.1)+
-  #   geom_text(data=d, mapping = aes(x=nX+xOffset, y=nY+yOffset,label=impValues) )+
-  #   labs( title = paste0("Optimal Cost : ", sum(d$impValues)), subtitle = paste0("Computation Time : ",compTime, " secs"))+
-  #   # To remove background grid lines
-  #   # theme(panel.border = element_blank(), panel.grid.major = element_blank(), panel.grid.minor = element_blank())
-  #   theme_classic()
-  #
-  # mapAlternative
 
   # Plot the results
   map <- ggplot() +
