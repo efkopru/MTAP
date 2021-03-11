@@ -465,15 +465,16 @@ plotMTAPResults<- function(MTAPResult, neigType){
 
   allP2 <- data.frame(idx=allPoints$idx, x=allPoints$x-0.5, y=allPoints$y-0.5, grp=allPoints$grp)
 
+  # Result
   ggplot() +
-    # if in aes(), size goes in the legend.
     geom_point(data=allP2, aes(x, y, color=grp),size = 3) +
     scale_y_continuous(minor_breaks = integer_breaks) +
     scale_x_continuous(minor_breaks = integer_breaks) +
+    # use minor_breaks for background grid lines.
     scale_color_manual(values=c("green", "red", "gray"), breaks = c("Start", "Target", "Intermediate")) +
-    geom_segment(data=d2, mapping = aes(x=x, y=y, xend=nX, yend=nY), arrow=arrow(length=unit(0.21,"cm"), ends="last", type = "closed"), col='blue', size=0.1)+
-    labs( title = paste0("Optimal Cost : ", MTAPResult$objective_value), subtitle = paste0("Computation Time : ",compTime, " secs"))+
-    # To remove background grid lines
+    labs(title = paste0("Optimal Cost : ", sum(d$impValues)), subtitle = paste0("Computation Time : ","compTime", " secs"))+
+    geom_segment(data=d2, mapping = aes(x=x, y=y, xend=nX, yend=nY), col='blue', size=0.6)+
+    geom_text(data=d2, mapping = aes(x=nX+xOffset, y=nY+yOffset,label=impValues) )+
     theme(panel.background = element_rect(fill = "lightgray"))
 }
 
